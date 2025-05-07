@@ -1,6 +1,7 @@
 package com.ironhack.spring_security.controllers;
 
-import com.ironhack.spring_security.models.AuthResponseDto;
+import com.ironhack.spring_security.models.ERole;
+import com.ironhack.spring_security.models.Role;
 import com.ironhack.spring_security.models.User;
 import com.ironhack.spring_security.services.JwtService;
 import com.ironhack.spring_security.services.UserService;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,16 +39,21 @@ public class AuthController {
         if (optionalUser.isPresent()) {
             User existingUser = optionalUser.get();
             if (userService.passwordIsValid(existingUser, user.getPassword())) {
-                List<String> roleNames = existingUser.getRoles().stream().map(role -> role.getName().name()).collect(Collectors.toList());
+
+                List<ERole> roleNames = existingUser.getRoles().stream()
+                        .map(Role::getName)
+                        .toList();
 
                 String token = jwtService.generateToken(existingUser.getUsername(), roleNames.toString());
 
-                AuthResponseDto responseDto = new AuthResponseDto();
-                responseDto.setToken(token);
-                responseDto.setUsername(existingUser.getUsername());
-                responseDto.setRoles(roleNames);
+                //
+//                AuthResponseDto responseDto = new AuthResponseDto();
+//                responseDto.setToken(token);
+//                responseDto.setUsername(existingUser.getUsername());
+//                responseDto.setRoles(roleNames);
 
-                return ResponseEntity.ok(responseDto);
+               return ResponseEntity.ok(token);
+              //  return ResponseEntity.ok(responseDto);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
             }

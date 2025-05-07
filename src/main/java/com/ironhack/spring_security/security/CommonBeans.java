@@ -13,3 +13,4 @@ public class CommonBeans {
         return new BCryptPasswordEncoder();
     }
 }
+

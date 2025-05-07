@@ -1,5 +1,7 @@
 package com.ironhack.spring_security.security;
 
+import com.ironhack.spring_security.filters.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -7,23 +9,36 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfig {
 
-    @Bean // we let Spring know that this method is a bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-               // .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/public/**","/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Here we can allow access to certain endpoints without authentication
-                        .anyRequest().authenticated() // The rest of the endpoints will require authentication
+                .csrf(csrf -> csrf.disable()) // For development. In production, configure appropriately
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Server doesn't store session state, because it's a REST API
+                .authorizeHttpRequests(auth -> auth
+                        // Public routes
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        // Routes protected by role
+                        .requestMatchers("/api/admin").hasRole("ADMIN")
+                        // All other routes require authentication
+                        .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults()); // this part enables the basic authentication
-        return http.build(); // this method returns the SecurityFilterChain object
+                // Add our filter before UsernamePasswordAuthenticationFilter
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 }
 

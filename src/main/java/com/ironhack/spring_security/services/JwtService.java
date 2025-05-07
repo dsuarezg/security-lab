@@ -22,7 +22,7 @@ public class JwtService {
                 .sign(Algorithm.HMAC256(SECRET));
     }
 
-    public boolean verifyToken(String token) {
+    public static boolean validateToken(String token) {
         try {
             JWT.require(Algorithm.HMAC256(SECRET))
                     .build()
@@ -33,14 +33,14 @@ public class JwtService {
         }
     }
 
-    public String getUsername(String token) {
+    public static String extractUsername(String token) {
         return JWT.require(Algorithm.HMAC256(SECRET))
                 .build()
                 .verify(token)
                 .getSubject();
     }
 
-    public String getRoles(String token) {
+    public static String extractRoles(String token) {
         DecodedJWT jwt = JWT.require(Algorithm.HMAC256(SECRET))
                 .build()
                 .verify(token);

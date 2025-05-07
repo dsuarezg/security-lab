@@ -43,6 +43,17 @@ class UserServiceTest {
         userRepository.delete(user);
     }
 
+
+    @Test
+    @DisplayName("Generate a user")
+    public void testGenerateUser() {
+        User user = new User();
+        user.setUsername("testUser");
+        user.setPassword("123456");
+
+        userService.saveUser(user);
+    }
+
     @Test
     @DisplayName("Encription of password successful")
     public void testEncriptionOfPasswordSuccessful() {

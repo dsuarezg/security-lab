@@ -11,19 +11,17 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Component
-public class JwtAuthenticationFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtService jwtService;
@@ -32,32 +30,37 @@ public class JwtAuthenticationFilter {
     private UserService userService;
 
 
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        // Verificar si el encabezado Authorization está presente y comienza con "Bearer "
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token =  authHeader.substring(7);
+        // Extraer el token del encabezado
+        String token = authHeader.substring(7);
 
-        if (!jwtService.verifyToken(token)) {
+        // Validar el token
+        if (!jwtService.validateToken(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String username = jwtService.getUsername(token);
-        String roles = jwtService.getRoles(token);
+        String username = jwtService.extractUsername(token);
+        String roles = jwtService.extractRoles(token);
 
         Collection<GrantedAuthority> authorities = extractAuthorities(roles);
 
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(username, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
-
     }
 
     private Collection<GrantedAuthority> extractAuthorities(String roles) {
